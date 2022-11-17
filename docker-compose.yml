@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  webapp:
+    container_name: webapp
+    build: 
+      context: ./
+      dockerfile: webapp_dockerfile
+    ports:
+      - 3000:3000
+  jenkins:
+    container_name: jenkins-docker
+    build:
+      context: ./
+      dockerfile: jenkins_dockerfile
+    restart: unless-stopped
+    networks:
+      - nikos-network
+    ports:
+      - 8080:8080
+      - 50000:50000
+    tty: true
+    volumes:
+      - ./volJenkins/jenkins-data:/var/jenkins_home
+      - ./volJenkins/jenkins-docker-certs:/certs/client:ro
+    
+    environment:
+      - DOCKER_HOST=tcp://docker:2376
+      - DOCKER_CERT_PATH=/certs/client
+      - DOCKER_TLS_VERIFY=1
+
+  dind:
+    container_name: dind-docker
+    image: docker:dind
+    privileged: true
+    networks:
+      nikos-network:
+        aliases:
+          - nikos-network
+    ports:
+      - 2376:2376
+    tty: true
+    volumes:
+    - ./volJenkins/jenkins-data:/var/jenkins_home
+    - ./volJenkins/jenkins-docker-certs:/certs/client
+    environment:
+      - DOCKER_TLS_CERTDIR=/certs
+
+networks:
+  nikos-network:
